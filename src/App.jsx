@@ -1,7 +1,9 @@
 import { useState } from 'react';
+import L from 'leaflet';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
-import L from 'leaflet';
+import './App.css';
+import Login from './components/Login';
 
 const LOCATION_TYPES = {
   SOURCE: 'source',
@@ -20,7 +22,8 @@ const defaultIcon = new L.Icon({
 });
 
 export default function App() {
-  const [view, setView] = useState('home'); // 'home', 'user', 'driver'
+  const [view, setView] = useState('home'); // 'home', 'user', 'driver', 'login'
+  const [userId, setUserId] = useState(null);
   const [locations, setLocations] = useState({
     [LOCATION_TYPES.SOURCE]: null,
     [LOCATION_TYPES.DESTINATION]: null
@@ -107,6 +110,16 @@ export default function App() {
     }
   };
 
+  const handleUserLogin = (userId) => {
+    setUserId(userId);
+    setView('user');
+  };
+
+  // Login Screen
+  if (view === 'login') {
+    return <Login onLogin={handleUserLogin} />;
+  }
+
   // Home Screen
   if (view === 'home') {
     return (
@@ -119,7 +132,7 @@ export default function App() {
             {/* User Option */}
             <div 
               className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300 cursor-pointer h-full"
-              onClick={() => setView('user')}
+              onClick={() => setView('login')}
             >
               <div className="p-8 text-center h-full flex flex-col">
                 <div className="w-20 h-20 mx-auto bg-blue-100 rounded-full flex items-center justify-center mb-4">
