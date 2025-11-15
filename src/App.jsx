@@ -3,6 +3,11 @@ import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 
+const LOCATION_TYPES = {
+  SOURCE: 'source',
+  DESTINATION: 'destination'
+};
+
 // Fix for default marker icons in React
 const defaultIcon = new L.Icon({
   iconUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png',
@@ -15,11 +20,15 @@ const defaultIcon = new L.Icon({
 });
 
 export default function App() {
-  const [location, setLocation] = useState(null);
+  const [locations, setLocations] = useState({
+    [LOCATION_TYPES.SOURCE]: null,
+    [LOCATION_TYPES.DESTINATION]: null
+  });
+  const [currentLocationType, setCurrentLocationType] = useState(null);
   const [error, setError] = useState(null);
-  const [showMap, setShowMap] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const callRideApi = async (userId, latitude, longitude) => {
+  const callRideApi = async (locationType, latitude, longitude) => {
     try {
       const response = await fetch('/api/v1/rides', {
         method: 'POST',
@@ -27,7 +36,8 @@ export default function App() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          userId,
+          userId: '1234',
+          locationType,
           latitude,
           longitude
         })
@@ -38,43 +48,89 @@ export default function App() {
       }
       
       const data = await response.json();
-      console.log('Ride API response:', data);
-      return data;
+      console.log(`${locationType} location saved:`, { latitude, longitude }, 'Response:', data);
+      return { ...data, locationType };
     } catch (error) {
-      console.error('Error calling ride API:', error);
+      console.error(`Error saving ${locationType} location:`, error);
       throw error;
     }
   };
 
-  const getUserLocation = () => {
+  const handleLocationSelection = (locationType) => {
+    setCurrentLocationType(locationType);
+    setIsLoading(true);
+    setError(null);
+
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
-        async (position) => {
+        (position) => {
           const { latitude, longitude } = position.coords;
-          console.log('User location - Latitude:', latitude, 'Longitude:', longitude);
+          console.log(`${locationType} location - Latitude: ${latitude}, Longitude: ${longitude}`);
           
-          try {
-            // Call the ride API with the user's location
-            await callRideApi('1234', latitude, longitude);
-            
-            // Update state if API call is successful
-            setLocation({ lat: latitude, lng: longitude });
-            setShowMap(true);
-            setError(null);
-          } catch (error) {
-            setError('Failed to initialize ride. Please try again.');
-            console.error('Error:', error);
-          }
+          // Update state with the selected location
+          setLocations(prev => ({
+            ...prev,
+            [locationType]: { lat: latitude, lng: longitude }
+          }));
+          
+          // Reset current location type
+          setCurrentLocationType(null);
+          setError(null);
+          setIsLoading(false);
         },
         (err) => {
           setError('Unable to retrieve your location. Please ensure location services are enabled.');
-          setShowMap(false);
+          setCurrentLocationType(null);
+          setIsLoading(false);
           console.error('Error getting location:', err);
         }
       );
     } else {
       setError('Geolocation is not supported by your browser');
-      setShowMap(false);
+      setIsLoading(false);
+    }
+  };
+
+  const isLocationSelected = (type) => locations[type] !== null;
+  const isBothLocationsSelected = Object.values(locations).every(loc => loc !== null);
+
+  const handleConfirmRide = async () => {
+    if (!isBothLocationsSelected) return;
+    
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      const response = await fetch('/api/v1/rides', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: '1234',
+          source: {
+            latitude: locations[LOCATION_TYPES.SOURCE].lat,
+            longitude: locations[LOCATION_TYPES.SOURCE].lng
+          },
+          destination: {
+            latitude: locations[LOCATION_TYPES.DESTINATION].lat,
+            longitude: locations[LOCATION_TYPES.DESTINATION].lng
+          }
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to confirm ride: ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      console.log('Ride confirmed:', data);
+      alert('Your ride has been confirmed!');
+    } catch (error) {
+      console.error('Error confirming ride:', error);
+      setError('Failed to confirm ride. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -89,13 +145,84 @@ export default function App() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
               </svg>
             </div>
-            <h2 className="text-2xl font-bold text-gray-800 mb-2">User</h2>
-            <p className="text-gray-600">Access user dashboard and services</p>
+            <h2 className="text-2xl font-bold text-gray-800 mb-6">Enter Your Trip Details</h2>
+            
+            {/* Source Button */}
+            <div className="mb-4">
+              <button 
+                onClick={() => handleLocationSelection(LOCATION_TYPES.SOURCE)}
+                disabled={isLoading}
+                className={`w-full px-6 py-3 rounded-lg transition-colors ${
+                  isLocationSelected(LOCATION_TYPES.SOURCE)
+                    ? 'bg-green-100 text-green-800 border-2 border-green-300'
+                    : 'bg-blue-600 text-white hover:bg-blue-700'
+                } ${isLoading && currentLocationType === LOCATION_TYPES.SOURCE ? 'opacity-50' : ''}`}
+              >
+                {isLoading && currentLocationType === LOCATION_TYPES.SOURCE ? (
+                  'Getting current location...'
+                ) : isLocationSelected(LOCATION_TYPES.SOURCE) ? (
+                  <span className="flex items-center justify-center">
+                    <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                    </svg>
+                    Source Set
+                  </span>
+                ) : (
+                  'Set Pickup Location'
+                )}
+              </button>
+              {isLocationSelected(LOCATION_TYPES.SOURCE) && (
+                <div className="mt-2 text-sm text-gray-600">
+                  {locations[LOCATION_TYPES.SOURCE].lat.toFixed(6)}, {locations[LOCATION_TYPES.SOURCE].lng.toFixed(6)}
+                </div>
+              )}
+            </div>
+
+            {/* Destination Button */}
+            <div className="mb-6">
+              <button 
+                onClick={() => handleLocationSelection(LOCATION_TYPES.DESTINATION)}
+                disabled={isLoading}
+                className={`w-full px-6 py-3 rounded-lg transition-colors ${
+                  isLocationSelected(LOCATION_TYPES.DESTINATION)
+                    ? 'bg-green-100 text-green-800 border-2 border-green-300'
+                    : 'bg-blue-600 text-white hover:bg-blue-700'
+                } ${isLoading && currentLocationType === LOCATION_TYPES.DESTINATION ? 'opacity-50' : ''}`}
+              >
+                {isLoading && currentLocationType === LOCATION_TYPES.DESTINATION ? (
+                  'Getting current location...'
+                ) : isLocationSelected(LOCATION_TYPES.DESTINATION) ? (
+                  <span className="flex items-center justify-center">
+                    <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                    </svg>
+                    Destination Set
+                  </span>
+                ) : (
+                  'Set Drop-off Location'
+                )}
+              </button>
+              {isLocationSelected(LOCATION_TYPES.DESTINATION) && (
+                <div className="mt-2 text-sm text-gray-600">
+                  {locations[LOCATION_TYPES.DESTINATION].lat.toFixed(6)}, {locations[LOCATION_TYPES.DESTINATION].lng.toFixed(6)}
+                </div>
+              )}
+            </div>
+
+            {/* Continue Button */}
             <button 
-              onClick={getUserLocation}
-              className="mt-6 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              onClick={() => {
+                // Handle form submission here
+                console.log('Locations:', locations);
+              }}
+              disabled={!isBothLocationsSelected || isLoading}
+              className={`w-full mt-2 px-6 py-3 rounded-lg transition-colors ${
+                isBothLocationsSelected 
+                  ? 'bg-green-600 text-white hover:bg-green-700' 
+                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+              }`}
             >
-              Continue as User
+              {isLoading ? 'Processing...' : 'Confirm Ride'}
             </button>
             
             {error && (
@@ -104,25 +231,57 @@ export default function App() {
               </div>
             )}
 
-            {showMap && location && (
-              <div className="mt-6 rounded-lg overflow-hidden border border-gray-200" style={{ height: '300px' }}>
+            {isBothLocationsSelected && (
+              <div className="mt-6">
+                <button
+                  onClick={handleConfirmRide}
+                  disabled={isLoading}
+                  className="w-full mb-4 py-3 px-6 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                >
+                  {isLoading ? (
+                    <>
+                      <svg className="animate-spin -ml-1 mr-2 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Confirming...
+                    </>
+                  ) : 'Confirm Ride'}
+                </button>
+                <div className="rounded-lg overflow-hidden border border-gray-200" style={{ height: '300px' }}>
                 <MapContainer 
-                  center={[location.lat, location.lng]} 
-                  zoom={15} 
+                  center={[
+                    (locations[LOCATION_TYPES.SOURCE].lat + locations[LOCATION_TYPES.DESTINATION].lat) / 2,
+                    (locations[LOCATION_TYPES.SOURCE].lng + locations[LOCATION_TYPES.DESTINATION].lng) / 2
+                  ]} 
+                  zoom={13} 
                   style={{ height: '100%', width: '100%' }}
-                  scrollWheelZoom={false}
+                  scrollWheelZoom={true}
                 >
                   <TileLayer
                     url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                     attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                   />
-                  <Marker position={[location.lat, location.lng]} icon={defaultIcon}>
+                  <Marker 
+                    position={[locations[LOCATION_TYPES.SOURCE].lat, locations[LOCATION_TYPES.SOURCE].lng]} 
+                    icon={defaultIcon}
+                  >
                     <Popup>
-                      You are here!<br />
-                      {location.lat.toFixed(6)}, {location.lng.toFixed(6)}
+                      <strong>Pickup Location</strong><br />
+                      {locations[LOCATION_TYPES.SOURCE].lat.toFixed(6)}, {locations[LOCATION_TYPES.SOURCE].lng.toFixed(6)}
+                    </Popup>
+                  </Marker>
+                  <Marker 
+                    position={[locations[LOCATION_TYPES.DESTINATION].lat, locations[LOCATION_TYPES.DESTINATION].lng]} 
+                    icon={defaultIcon}
+                  >
+                    <Popup>
+                      <strong>Drop-off Location</strong><br />
+                      {locations[LOCATION_TYPES.DESTINATION].lat.toFixed(6)}, {locations[LOCATION_TYPES.DESTINATION].lng.toFixed(6)}
                     </Popup>
                   </Marker>
                 </MapContainer>
+              </div>
               </div>
             )}
           </div>
