@@ -4,6 +4,7 @@ import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import './App.css';
 import Login from './components/Login';
+import DriverLogin from './components/DriverLogin';
 
 const LOCATION_TYPES = {
   SOURCE: 'source',
@@ -153,7 +154,7 @@ export default function App() {
             {/* Driver Option */}
             <div 
               className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300 cursor-pointer h-full"
-              onClick={() => setView('driver')}
+              onClick={() => setView('driver-login')}
             >
               <div className="p-8 text-center h-full flex flex-col">
                 <div className="w-20 h-20 mx-auto bg-green-100 rounded-full flex items-center justify-center mb-4">
@@ -176,13 +177,21 @@ export default function App() {
     );
   }
 
-  // Driver View (Placeholder)
-  if (view === 'driver') {
+  // Driver Login View
+  if (view === 'driver-login') {
+    return <DriverLogin onLogin={(driverId) => {
+      setUserId(driverId);
+      setView('driver-home');
+    }} />;
+  }
+
+  // Driver Home View
+  if (view === 'driver-home') {
     return (
       <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
         <div className="bg-white rounded-xl shadow-lg p-8 max-w-md w-full text-center">
-          <h1 className="text-2xl font-bold text-gray-800 mb-4">Driver Dashboard</h1>
-          <p className="text-gray-600 mb-6">Driver features coming soon!</p>
+          <h1 className="text-2xl font-bold text-gray-800 mb-4">WELCOME, DRIVER!</h1>
+          <p className="text-gray-600 mb-6">Driver ID: {userId}</p>
           <button 
             onClick={() => setView('home')}
             className="px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
