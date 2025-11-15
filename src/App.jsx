@@ -1,11 +1,23 @@
 import { useState } from 'react';
-import LocationMap from './components/Map';
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
+import L from 'leaflet';
 
 const LOCATION_TYPES = {
   SOURCE: 'source',
   DESTINATION: 'destination'
 };
+
+// Fix for default marker icons in React
+const defaultIcon = new L.Icon({
+  iconUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png',
+  iconRetinaUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon-2x.png',
+  shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41]
+});
 
 export default function App() {
   const [view, setView] = useState('home'); // 'home', 'user', 'driver'
@@ -13,43 +25,43 @@ export default function App() {
     [LOCATION_TYPES.SOURCE]: null,
     [LOCATION_TYPES.DESTINATION]: null
   });
-  const [mapModalOpen, setMapModalOpen] = useState(false);
   const [currentLocationType, setCurrentLocationType] = useState(null);
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  const callRideApi = async (locationType, latitude, longitude) => {
-    try {
-      const response = await fetch('/api/v1/rides', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          userId: '1234',
-          locationType,
-          latitude,
-          longitude
-        })
-      });
-      
-      if (!response.ok) {
-        throw new Error(`API request failed with status ${response.status}`);
-      }
-      
-      const data = await response.json();
-      console.log(`${locationType} location saved:`, { latitude, longitude }, 'Response:', data);
-      return { ...data, locationType };
-    } catch (error) {
-      console.error(`Error saving ${locationType} location:`, error);
-      throw error;
-    }
-  };
-
   const handleLocationSelection = (locationType) => {
-    console.log('Setting location type:', locationType);
     setCurrentLocationType(locationType);
-    setMapModalOpen(true);
+    setIsLoading(true);
+    setError(null);
+
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude } = position.coords;
+          console.log(`${locationType} location - Latitude: ${latitude}, Longitude: ${longitude}`);
+          
+          // Update state with the selected location
+          setLocations(prev => ({
+            ...prev,
+            [locationType]: { lat: latitude, lng: longitude }
+          }));
+          
+          // Reset current location type
+          setCurrentLocationType(null);
+          setError(null);
+          setIsLoading(false);
+        },
+        (err) => {
+          setError('Unable to retrieve your location. Please ensure location services are enabled.');
+          setCurrentLocationType(null);
+          setIsLoading(false);
+          console.error('Error getting location:', err);
+        }
+      );
+    } else {
+      setError('Geolocation is not supported by your browser');
+      setIsLoading(false);
+    }
   };
 
   const isLocationSelected = (type) => locations[type] !== null;
@@ -74,8 +86,8 @@ export default function App() {
             longitude: locations[LOCATION_TYPES.SOURCE].lng
           },
           destination: {
-            latitude: locations[LOCATION_TYPES.DESTINATION].lat,
-            longitude: locations[LOCATION_TYPES.DESTINATION].lng
+            latitude: 12.971174382627375, 
+            longitude: 77.71258561799061
           }
         })
       });
@@ -93,44 +105,6 @@ export default function App() {
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const handleMapLocationSelect = (location) => {
-    if (location && currentLocationType) {
-      setLocations(prev => ({
-        ...prev,
-        [currentLocationType]: location
-      }));
-    }
-    setMapModalOpen(false);
-    setCurrentLocationType(null);
-    setError(null);
-  };
-
-  // Map Modal
-  const renderMapModal = () => {
-    if (!mapModalOpen) return null;
-    
-    console.log('Rendering map modal with currentLocationType:', currentLocationType);
-
-    const title = currentLocationType === LOCATION_TYPES.SOURCE 
-      ? 'Set Pickup Location' 
-      : 'Set Drop-off Location';
-
-    return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-        <div className="bg-white rounded-xl w-full max-w-2xl overflow-hidden">
-          <div className="p-4 border-b border-gray-200">
-            <h2 className="text-xl font-semibold text-gray-800">{title}</h2>
-            <p className="text-sm text-gray-600">Click on the map to select a location</p>
-          </div>
-          <LocationMap 
-            onLocationSelect={handleMapLocationSelect} 
-            initialPosition={currentLocationType ? locations[currentLocationType] : null}
-          />
-        </div>
-      </div>
-    );
   };
 
   // Home Screen
@@ -209,8 +183,7 @@ export default function App() {
 
   // User View
   return (
-    <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4 relative">
-      {renderMapModal()}
+    <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="bg-white rounded-xl shadow-lg overflow-hidden">
           <div className="p-6">
@@ -291,7 +264,7 @@ export default function App() {
               </button>
               {isLocationSelected(LOCATION_TYPES.DESTINATION) && (
                 <div className="mt-2 text-sm text-gray-600">
-                  {locations[LOCATION_TYPES.DESTINATION].lat.toFixed(6)}, {locations[LOCATION_TYPES.DESTINATION].lng.toFixed(6)}
+                  12.971174382627375, 77.71258561799061
                 </div>
               )}
             </div>
