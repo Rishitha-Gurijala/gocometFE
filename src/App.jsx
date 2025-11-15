@@ -20,6 +20,7 @@ const defaultIcon = new L.Icon({
 });
 
 export default function App() {
+  const [view, setView] = useState('home'); // 'home', 'user', 'driver'
   const [locations, setLocations] = useState({
     [LOCATION_TYPES.SOURCE]: null,
     [LOCATION_TYPES.DESTINATION]: null
@@ -134,17 +135,104 @@ export default function App() {
     }
   };
 
+  // Home Screen
+  if (view === 'home') {
+    return (
+      <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-center p-4">
+        <div className="w-full max-w-4xl">
+          <h1 className="text-3xl md:text-4xl font-bold text-center text-gray-800 mb-4">Welcome to GoComet</h1>
+          <p className="text-gray-600 text-center mb-12">Choose how you'd like to continue</p>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* User Option */}
+            <div 
+              className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300 cursor-pointer h-full"
+              onClick={() => setView('user')}
+            >
+              <div className="p-8 text-center h-full flex flex-col">
+                <div className="w-20 h-20 mx-auto bg-blue-100 rounded-full flex items-center justify-center mb-4">
+                  <svg className="w-10 h-10 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
+                </div>
+                <h2 className="text-2xl font-bold text-gray-800 mb-2">User</h2>
+                <p className="text-gray-600 mb-6">Book a ride to your destination</p>
+                <div className="mt-auto">
+                  <button className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors w-full">
+                    Continue as User
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Driver Option */}
+            <div 
+              className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300 cursor-pointer h-full"
+              onClick={() => setView('driver')}
+            >
+              <div className="p-8 text-center h-full flex flex-col">
+                <div className="w-20 h-20 mx-auto bg-green-100 rounded-full flex items-center justify-center mb-4">
+                  <svg className="w-10 h-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                  </svg>
+                </div>
+                <h2 className="text-2xl font-bold text-gray-800 mb-2">Driver</h2>
+                <p className="text-gray-600 mb-6">Access driver dashboard and services</p>
+                <div className="mt-auto">
+                  <button className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors w-full">
+                    Continue as Driver
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Driver View (Placeholder)
+  if (view === 'driver') {
+    return (
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
+        <div className="bg-white rounded-xl shadow-lg p-8 max-w-md w-full text-center">
+          <h1 className="text-2xl font-bold text-gray-800 mb-4">Driver Dashboard</h1>
+          <p className="text-gray-600 mb-6">Driver features coming soon!</p>
+          <button 
+            onClick={() => setView('home')}
+            className="px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+          >
+            Back to Home
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // User View
   return (
     <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full max-w-4xl">
-        {/* User Box */}
-        <div className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300">
-          <div className="p-8 text-center">
-            <div className="w-20 h-20 mx-auto bg-blue-100 rounded-full flex items-center justify-center mb-4">
-              <svg className="w-10 h-10 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-              </svg>
+      <div className="w-full max-w-md">
+        <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+          <div className="p-6">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold text-gray-800">Book a Ride</h2>
+              <button 
+                onClick={() => setView('home')}
+                className="text-gray-500 hover:text-gray-700"
+                title="Back to home"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+              </button>
             </div>
+            <div className="p-8 text-center">
+              <div className="w-20 h-20 mx-auto bg-blue-100 rounded-full flex items-center justify-center mb-4">
+                <svg className="w-10 h-10 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+              </div>
             <h2 className="text-2xl font-bold text-gray-800 mb-6">Enter Your Trip Details</h2>
             
             {/* Source Button */}
@@ -210,20 +298,7 @@ export default function App() {
             </div>
 
             {/* Continue Button */}
-            <button 
-              onClick={() => {
-                // Handle form submission here
-                console.log('Locations:', locations);
-              }}
-              disabled={!isBothLocationsSelected || isLoading}
-              className={`w-full mt-2 px-6 py-3 rounded-lg transition-colors ${
-                isBothLocationsSelected 
-                  ? 'bg-green-600 text-white hover:bg-green-700' 
-                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-              }`}
-            >
-              {isLoading ? 'Processing...' : 'Confirm Ride'}
-            </button>
+
             
             {error && (
               <div className="mt-4 p-3 bg-red-50 text-red-700 rounded-lg text-sm">
@@ -282,24 +357,9 @@ export default function App() {
                   </Marker>
                 </MapContainer>
               </div>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Driver Box */}
-        <div className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300">
-          <div className="p-8 text-center">
-            <div className="w-20 h-20 mx-auto bg-green-100 rounded-full flex items-center justify-center mb-4">
-              <svg className="w-10 h-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-              </svg>
             </div>
-            <h2 className="text-2xl font-bold text-gray-800 mb-2">Driver</h2>
-            <p className="text-gray-600">Access driver dashboard and services</p>
-            <button className="mt-6 px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
-              Continue as Driver
-            </button>
+          )}
+            </div>
           </div>
         </div>
       </div>
