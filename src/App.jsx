@@ -89,8 +89,8 @@ export default function App() {
             longitude: locations[LOCATION_TYPES.SOURCE].lng
           },
           destination: {
-            latitude: 12.971174382627375, 
-            longitude: 77.71258561799061
+            latitude: locations[LOCATION_TYPES.DESTINATION].lat,
+            longitude: locations[LOCATION_TYPES.DESTINATION].lng
           }
         })
       });
@@ -277,8 +277,8 @@ export default function App() {
               </button>
               {isLocationSelected(LOCATION_TYPES.DESTINATION) && (
                 <div className="mt-2 text-sm text-gray-600">
-                  12.971174382627375, 77.71258561799061
-                </div>
+                  {locations[LOCATION_TYPES.DESTINATION].lat.toFixed(6)}, {locations[LOCATION_TYPES.DESTINATION].lng.toFixed(6)}
+                  </div>
               )}
             </div>
 
