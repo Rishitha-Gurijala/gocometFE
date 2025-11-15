@@ -36,6 +36,33 @@ export default function App() {
   const [showLocationPicker, setShowLocationPicker] = useState(false);
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [rides, setRides] = useState([]);
+  const [showRides, setShowRides] = useState(false);
+  const [isLoadingRides, setIsLoadingRides] = useState(false);
+
+  const viewRides = async () => {
+    if (!userId) return;
+    
+    setIsLoadingRides(true);
+    setError(null);
+    
+    try {
+      const response = await fetch(`/api/v1/viewRide/${userId}`);
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to fetch rides');
+      }
+      
+      setRides(data.data || []);
+      setShowRides(true);
+    } catch (err) {
+      console.error('Error fetching rides:', err);
+      setError(err.message || 'Failed to load rides. Please try again.');
+    } finally {
+      setIsLoadingRides(false);
+    }
+  };
 
   const handleLocationSelection = (locationType) => {
     setCurrentLocationType(locationType);
@@ -115,9 +142,11 @@ export default function App() {
   // Home Screen
   if (view === 'home') {
     return (
-      <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-center p-4">
+      <div className="flex flex-col items-center justify-start min-h-screen bg-gray-100 p-4 pt-12">
+        <h1 className="text-4xl font-bold mb-8">GoComet Ride Sharing</h1>
+        
         <div className="w-full max-w-4xl">
-          <h1 className="text-3xl md:text-4xl font-bold text-center text-gray-800 mb-4">Welcome to GoComet</h1>
+          <h1 className="text-3xl font-bold text-center text-gray-800 mb-4">Welcome to GoComet</h1>
           <p className="text-gray-600 text-center mb-12">Choose how you'd like to continue</p>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -367,6 +396,80 @@ export default function App() {
               </div>
             </div>
           )}
+
+            {/* View My Rides Section */}
+            <div className="mt-8">
+              <button 
+                onClick={viewRides}
+                disabled={isLoadingRides}
+                className={`w-full px-6 py-3 rounded-lg font-medium text-white ${
+                  isLoadingRides 
+                    ? 'bg-gray-400 cursor-not-allowed' 
+                    : 'bg-blue-600 hover:bg-blue-700'
+                } transition-colors`}
+              >
+                {isLoadingRides ? 'Loading...' : 'View My Rides'}
+              </button>
+              
+              {error && (
+                <div className="mt-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+                  {error}
+                </div>
+              )}
+              
+              {showRides && (
+                <div className="mt-6">
+                  <h2 className="text-xl font-semibold mb-4 text-gray-800">Your Ride History</h2>
+                  {rides.length === 0 ? (
+                    <p className="text-gray-600 text-center py-4">No rides found</p>
+                  ) : (
+                    <div className="bg-white rounded-lg shadow border border-gray-200 overflow-hidden">
+                      <div className="overflow-x-auto max-h-96 overflow-y-auto">
+                      <table className="min-w-full divide-y divide-gray-200">
+                        <thead className="bg-gray-50">
+                          <tr>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ride ID</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pickup</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Dropoff</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Driver</th>
+                          </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                          {rides.map((ride) => (
+                            <tr key={ride.id} className="hover:bg-gray-50">
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{ride.id}</td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                {parseFloat(ride.pickup_lat).toFixed(6)}, {parseFloat(ride.pickup_long).toFixed(6)}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                {parseFloat(ride.dropoff_lat).toFixed(6)}, {parseFloat(ride.dropoff_long).toFixed(6)}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                                  ride.status === 'COMPLETED' 
+                                    ? 'bg-green-100 text-green-800' 
+                                    : ride.status === 'CANCELLED'
+                                      ? 'bg-red-100 text-red-800'
+                                      : 'bg-yellow-100 text-yellow-800'
+                                }`}>
+                                  {ride.status}
+                                </span>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                {ride.driverId || 'Not assigned'}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+            
             </div>
           </div>
         </div>
