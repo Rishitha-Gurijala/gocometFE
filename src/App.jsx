@@ -19,14 +19,52 @@ export default function App() {
   const [error, setError] = useState(null);
   const [showMap, setShowMap] = useState(false);
 
+  const callRideApi = async (userId, latitude, longitude) => {
+    try {
+      const response = await fetch('/api/v1/rides', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId,
+          latitude,
+          longitude
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error(`API request failed with status ${response.status}`);
+      }
+      
+      const data = await response.json();
+      console.log('Ride API response:', data);
+      return data;
+    } catch (error) {
+      console.error('Error calling ride API:', error);
+      throw error;
+    }
+  };
+
   const getUserLocation = () => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
-        (position) => {
+        async (position) => {
           const { latitude, longitude } = position.coords;
-          setLocation({ lat: latitude, lng: longitude });
-          setShowMap(true);
-          setError(null);
+          console.log('User location - Latitude:', latitude, 'Longitude:', longitude);
+          
+          try {
+            // Call the ride API with the user's location
+            await callRideApi('1234', latitude, longitude);
+            
+            // Update state if API call is successful
+            setLocation({ lat: latitude, lng: longitude });
+            setShowMap(true);
+            setError(null);
+          } catch (error) {
+            setError('Failed to initialize ride. Please try again.');
+            console.error('Error:', error);
+          }
         },
         (err) => {
           setError('Unable to retrieve your location. Please ensure location services are enabled.');
