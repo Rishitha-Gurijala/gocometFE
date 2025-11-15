@@ -4,7 +4,9 @@ const DriverDashboard = ({ driverData }) => {
   const [position, setPosition] = useState(null);
   const [showCoords, setShowCoords] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
   const [error, setError] = useState('');
+  const [apiResponse, setApiResponse] = useState('');
 
   const getLocation = () => {
     setIsLoading(true);
@@ -41,6 +43,74 @@ const DriverDashboard = ({ driverData }) => {
   const handleHideCoords = () => {
     setShowCoords(false);
     setPosition(null);
+  };
+
+  const updateDriverLocation = async () => {
+    if (!position) {
+      setError('No location data available. Please get your location first.');
+      return;
+    }
+    
+    setIsUpdating(true);
+    setError('');
+    setApiResponse('');
+    
+    try {
+      const driverId = driverData?.id;
+      if (!driverId) {
+        throw new Error('Driver ID not found. Please log in again.');
+      }
+
+      console.log('Sending location update:', { 
+        latitude: position.lat, 
+        longitude: position.lng,
+        driverId: driverId
+      });
+      
+      const response = await fetch('/api/v1/updateDriverLocation', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({
+          latitude: position.lat,
+          longitude: position.lng,
+          driverId: driverId
+        })
+      });
+      
+      const responseText = await response.text();
+      console.log('Raw response:', responseText);
+      
+      let data;
+      try {
+        data = responseText ? JSON.parse(responseText) : {};
+      } catch (e) {
+        console.error('Failed to parse response as JSON:', e);
+        throw new Error(`Invalid response from server: ${responseText}`);
+      }
+      
+      console.log('Parsed response:', data);
+      
+      if (response.ok) {
+        if (data && (data.success || data.message)) {
+          setApiResponse(data.message || 'Location updated successfully');
+        } else {
+          throw new Error('Unexpected response format from server');
+        }
+      } else {
+        throw new Error(data.message || `Server returned ${response.status}`);
+      }
+    } catch (err) {
+      console.error('Error updating location:', err);
+      const errorMessage = err.response 
+        ? `Server error: ${err.response.status} - ${err.response.statusText}`
+        : err.message;
+      setError(`Error: ${errorMessage}. Check console for details.`);
+    } finally {
+      setIsUpdating(false);
+    }
   };
 
   return (
@@ -81,12 +151,26 @@ const DriverDashboard = ({ driverData }) => {
                     </div>
                   </div>
                 </div>
-                <button
-                  onClick={handleHideCoords}
-                  className="mt-4 w-full py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded transition-colors"
-                >
-                  Hide Coordinates
-                </button>
+                <div className="mt-4 space-y-2">
+                  <button
+                    onClick={updateDriverLocation}
+                    disabled={isUpdating}
+                    className={`w-full py-2 ${isUpdating ? 'bg-blue-400' : 'bg-blue-600 hover:bg-blue-700'} text-white font-medium rounded transition-colors`}
+                  >
+                    {isUpdating ? 'Updating...' : 'Update Location'}
+                  </button>
+                  <button
+                    onClick={handleHideCoords}
+                    className="w-full py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded transition-colors"
+                  >
+                    Hide Coordinates
+                  </button>
+                </div>
+                {apiResponse && (
+                  <div className="mt-3 p-2 bg-green-50 text-green-700 text-sm rounded border border-green-200">
+                    {apiResponse}
+                  </div>
+                )}
               </div>
             </div>
           )}
