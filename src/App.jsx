@@ -5,6 +5,7 @@ import 'leaflet/dist/leaflet.css';
 import './App.css';
 import Login from './components/Login';
 import DriverLogin from './components/DriverLogin';
+import DriverDashboard from './components/DriverDashboard';
 import LocationPicker from './components/LocationPicker';
 
 const LOCATION_TYPES = {
@@ -89,9 +90,26 @@ export default function App() {
     setView('user');
   };
 
+  const handleDriverLogin = (driverData) => {
+    setUserId(driverData.id);
+    setDriverData(driverData);
+    setView('driver');
+  };
+
   // Login Screen
   if (view === 'login') {
     return <Login onLogin={handleUserLogin} />;
+  }
+
+  // Driver Screen
+  if (view === 'driver') {
+    // Temporary test data
+    if (!driverData.id) {
+      // Using test data to verify DriverDashboard rendering
+      return <DriverDashboard driverData={{ id: 'test123', name: 'Test Driver' }} />;
+      // return <DriverLogin onLogin={handleDriverLogin} />;
+    }
+    return <DriverDashboard driverData={driverData} />;
   }
 
   // Home Screen
@@ -154,9 +172,8 @@ export default function App() {
   if (view === 'driver-login') {
     return <DriverLogin onLogin={(driverData) => {
       setUserId(driverData.id);
-      setView('driver-home');
-      // Store driver data in state if needed
       setDriverData(driverData);
+      setView('driver'); // Changed from 'driver-home' to 'driver' to match our condition
     }} />;
   }
 
