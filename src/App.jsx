@@ -5,6 +5,7 @@ import 'leaflet/dist/leaflet.css';
 import './App.css';
 import Login from './components/Login';
 import DriverLogin from './components/DriverLogin';
+import LocationPicker from './components/LocationPicker';
 
 const LOCATION_TYPES = {
   SOURCE: 'source',
@@ -30,42 +31,13 @@ export default function App() {
     [LOCATION_TYPES.DESTINATION]: null
   });
   const [currentLocationType, setCurrentLocationType] = useState(null);
+  const [showLocationPicker, setShowLocationPicker] = useState(false);
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
 
   const handleLocationSelection = (locationType) => {
     setCurrentLocationType(locationType);
-    setIsLoading(true);
-    setError(null);
-
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const { latitude, longitude } = position.coords;
-          console.log(`${locationType} location - Latitude: ${latitude}, Longitude: ${longitude}`);
-          
-          // Update state with the selected location
-          setLocations(prev => ({
-            ...prev,
-            [locationType]: { lat: latitude, lng: longitude }
-          }));
-          
-          // Reset current location type
-          setCurrentLocationType(null);
-          setError(null);
-          setIsLoading(false);
-        },
-        (err) => {
-          setError('Unable to retrieve your location. Please ensure location services are enabled.');
-          setCurrentLocationType(null);
-          setIsLoading(false);
-          console.error('Error getting location:', err);
-        }
-      );
-    } else {
-      setError('Geolocation is not supported by your browser');
-      setIsLoading(false);
-    }
+    setShowLocationPicker(true);
   };
 
   const isLocationSelected = (type) => locations[type] !== null;
@@ -203,9 +175,30 @@ export default function App() {
     );
   }
 
+  const handleLocationConfirm = (location) => {
+    if (currentLocationType) {
+      setLocations(prev => ({
+        ...prev,
+        [currentLocationType]: { lat: location.lat, lng: location.lng }
+      }));
+      setShowLocationPicker(false);
+      setCurrentLocationType(null);
+    }
+  };
+
   // User View
   return (
     <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
+      {showLocationPicker && (
+        <LocationPicker
+          onConfirm={handleLocationConfirm}
+          onCancel={() => {
+            setShowLocationPicker(false);
+            setCurrentLocationType(null);
+          }}
+          type={currentLocationType === LOCATION_TYPES.SOURCE ? 'pickup' : 'dropoff'}
+        />
+      )}
       <div className="w-full max-w-md">
         <div className="bg-white rounded-xl shadow-lg overflow-hidden">
           <div className="p-6">

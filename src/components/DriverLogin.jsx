@@ -45,7 +45,11 @@ const DriverLogin = ({ onLogin }) => {
       }
     } catch (error) {
       console.error('Login error:', error);
-      setError('Failed to validate driver. Please try again.');
+      if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
+        setError('Cannot connect to the server. Please make sure the backend is running.');
+      } else {
+        setError(`Failed to validate driver: ${error.message}`);
+      }
     } finally {
       setIsLoading(false);
     }
