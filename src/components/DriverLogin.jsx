@@ -34,11 +34,15 @@ const DriverLogin = ({ onLogin }) => {
       const data = await response.json();
       console.log('Login API Response:', { status: response.status, data });
       
-      if (data === 'valid') {
-        onLogin(driverId);
-      } else if (data === 'incorrect') {
+      if (data.message === 'valid') {
+        // Pass both driver ID and name to onLogin
+        onLogin({
+          id: driverId,
+          name: data.name || `Driver ${driverId}` // Fallback to 'Driver [ID]' if name not provided
+        });
+      } else if (data.message === 'incorrect') {
         setError('Incorrect Password');
-      } else if (data === 'invalid') {
+      } else if (data.message === 'invalid') {
         setShowSignup(true);
       } else {
         setError('Invalid response from server');

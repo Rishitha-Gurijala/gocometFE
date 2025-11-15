@@ -26,6 +26,7 @@ const defaultIcon = new L.Icon({
 export default function App() {
   const [view, setView] = useState('home'); // 'home', 'user', 'driver', 'login'
   const [userId, setUserId] = useState(null);
+  const [driverData, setDriverData] = useState({ name: '', id: '' });
   const [locations, setLocations] = useState({
     [LOCATION_TYPES.SOURCE]: null,
     [LOCATION_TYPES.DESTINATION]: null
@@ -56,7 +57,7 @@ export default function App() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          userId: '1234',
+          userId: userId,
           source: {
             latitude: locations[LOCATION_TYPES.SOURCE].lat,
             longitude: locations[LOCATION_TYPES.SOURCE].lng
@@ -151,9 +152,11 @@ export default function App() {
 
   // Driver Login View
   if (view === 'driver-login') {
-    return <DriverLogin onLogin={(driverId) => {
-      setUserId(driverId);
+    return <DriverLogin onLogin={(driverData) => {
+      setUserId(driverData.id);
       setView('driver-home');
+      // Store driver data in state if needed
+      setDriverData(driverData);
     }} />;
   }
 
@@ -162,8 +165,9 @@ export default function App() {
     return (
       <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
         <div className="bg-white rounded-xl shadow-lg p-8 max-w-md w-full text-center">
-          <h1 className="text-2xl font-bold text-gray-800 mb-4">WELCOME, DRIVER!</h1>
-          <p className="text-gray-600 mb-6">Driver ID: {userId}</p>
+          <h1 className="text-2xl font-bold text-gray-800 mb-4">WELCOME, {driverData.name || 'DRIVER'}!</h1>
+          <p className="text-gray-600 mb-2">Driver ID: {userId}</p>
+          {driverData.name && <p className="text-gray-600 mb-6">Name: {driverData.name}</p>}
           <button 
             onClick={() => setView('home')}
             className="px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"

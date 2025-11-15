@@ -6,7 +6,7 @@ const DriverSignup = ({ driverId: initialDriverId = '', password: initialPasswor
   const [name, setName] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
+  const [createdDriver, setCreatedDriver] = useState(null);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -48,12 +48,12 @@ const DriverSignup = ({ driverId: initialDriverId = '', password: initialPasswor
       if (!response.ok) {
         throw new Error(`Failed to create driver account: ${response.status} ${response.statusText}`);
       }
-      
-      setSuccess(true);
-      // Auto-close after 2 seconds
-      setTimeout(() => {
-        onSignupSuccess();
-      }, 2000);
+
+      const driverData = { id: driverId, name };
+      setCreatedDriver(driverData);
+      if (onSignupSuccess) {
+        onSignupSuccess(driverData);
+      }
       
     } catch (error) {
       console.error('Signup error:', error);
@@ -63,19 +63,32 @@ const DriverSignup = ({ driverId: initialDriverId = '', password: initialPasswor
     }
   };
 
-  if (success) {
+  if (createdDriver) {
     return (
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
-        <div className="bg-white p-8 rounded-xl shadow-md w-full max-w-md text-center">
-          <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-            </svg>
+      <div className="max-w-md mx-auto p-6 bg-white rounded-lg shadow-md">
+        <h2 className="text-2xl font-bold text-center text-green-600 mb-4">Account Created Successfully!</h2>
+        
+        <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
+          <h3 className="font-semibold text-green-800 mb-2">Your Driver Details:</h3>
+          <div className="space-y-2">
+            <p className="text-gray-700">
+              <span className="font-medium">Driver ID:</span> {createdDriver.id}
+            </p>
+            <p className="text-gray-700">
+              <span className="font-medium">Name:</span> {createdDriver.name}
+            </p>
           </div>
-          <h2 className="text-2xl font-bold text-gray-800 mb-2">Account Created!</h2>
-          <p className="text-gray-600 mb-6">Your driver account has been created successfully.</p>
-          <p className="text-sm text-gray-500">Redirecting to login...</p>
+          <p className="mt-3 text-sm text-green-700">
+            Please save these details for future reference.
+          </p>
         </div>
+        
+        <button
+          onClick={onBackToLogin}
+          className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors"
+        >
+          Back to Login
+        </button>
       </div>
     );
   }
