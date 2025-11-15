@@ -36,7 +36,7 @@ const Signup = ({ userId, onSignupSuccess, onBackToLogin }) => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          userId: parseInt(userId, 10),
+          userId: userId,
           password: password,
           name: name.trim()
         })
@@ -46,10 +46,10 @@ const Signup = ({ userId, onSignupSuccess, onBackToLogin }) => {
       
       if (data.success) {
         setSignupSuccess(true);
-        // Auto-navigate back to login after 2 seconds
+        // Auto-navigate back to login after 3 seconds
         setTimeout(() => {
           onSignupSuccess();
-        }, 2000);
+        }, 3000);
       } else {
         setError(data.message || 'Failed to create user. Please try again.');
       }
@@ -71,7 +71,9 @@ const Signup = ({ userId, onSignupSuccess, onBackToLogin }) => {
             </svg>
           </div>
           <h2 className="text-2xl font-bold text-gray-800 mb-2">Account Created!</h2>
-          <p className="text-gray-600 mb-6">Your account has been created successfully. Redirecting to login...</p>
+          <p className="text-gray-600 mb-2">Account created for user: {userId}</p>
+          <p className="text-gray-600 mb-2">Name: {name.trim()}</p>
+          <p className="text-gray-600 mb-6">Redirecting to login...</p>
         </div>
       </div>
     );
