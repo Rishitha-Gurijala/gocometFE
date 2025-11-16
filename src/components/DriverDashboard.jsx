@@ -11,6 +11,52 @@ const DriverDashboard = ({ driverData }) => {
   const [isLoadingRides, setIsLoadingRides] = useState(false);
   const [showRides, setShowRides] = useState(false);
   const [isConfirming, setIsConfirming] = useState(false);
+  const [isFinishing, setIsFinishing] = useState(false);
+  
+  const handleFinishRide = async (rideId) => {
+    if (!rideId || !driverData?.id) return;
+    
+    setIsFinishing(true);
+    try {
+      const response = await fetch('/api/v1/trips/end', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json' 
+        },
+        body: JSON.stringify({ 
+          driverId: driverData.id,
+          rideId: rideId 
+        })
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok || !data.success) {
+        throw new Error(data.message || 'Failed to finish ride');
+      }
+      
+      // Update the ride status in the local state
+      setRides(prevRides => 
+        prevRides.map(ride => 
+          ride.id === rideId 
+            ? { ...ride, status: 'COMPLETED' }
+            : ride
+        )
+      );
+      
+      // Show success message with fare if available
+      const fareMessage = data.fare 
+        ? `${data.message} Fare: ₹${data.fare}` 
+        : data.message;
+      showToast(fareMessage);
+      
+    } catch (err) {
+      console.error('Error completing ride:', err);
+      showToast(err.message || 'Failed to complete ride. Please try again.', true);
+    } finally {
+      setIsFinishing(false);
+    }
+  };
   
   const showToast = (message, isError = false) => {
     const toast = document.createElement('div');
@@ -327,6 +373,7 @@ const DriverDashboard = ({ driverData }) => {
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pickup</th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Dropoff</th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fare</th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Booking</th>
                           </tr>
                         </thead>
@@ -353,17 +400,29 @@ const DriverDashboard = ({ driverData }) => {
                                 </span>
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                <button 
-                                  onClick={() => handleConfirmRide(ride.id)}
-                                  disabled={ride.status !== 'WAITING'}
-                                  className={`px-3 py-1 rounded text-sm font-medium ${
-                                    ride.status === 'WAITING'
-                                      ? 'bg-green-600 text-white hover:bg-green-700'
-                                      : 'bg-gray-200 text-gray-500 cursor-not-allowed'
-                                  }`}
-                                >
-                                  {ride.status === 'WAITING' ? 'Confirm' : 'Confirmed'}
-                                </button>
+                                {ride.fare ? `₹${ride.fare}` : '-'}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                {ride.status === 'IN_PROGRESS' ? (
+                                  <button 
+                                    onClick={() => handleFinishRide(ride.id)}
+                                    className="px-3 py-1 rounded text-sm font-medium bg-blue-600 text-white hover:bg-blue-700"
+                                  >
+                                    FINISH
+                                  </button>
+                                ) : (
+                                  <button 
+                                    onClick={() => handleConfirmRide(ride.id)}
+                                    disabled={ride.status !== 'WAITING'}
+                                    className={`px-3 py-1 rounded text-sm font-medium ${
+                                      ride.status === 'WAITING'
+                                        ? 'bg-green-600 text-white hover:bg-green-700'
+                                        : 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                                    }`}
+                                  >
+                                    {ride.status === 'WAITING' ? 'Confirm' : 'Ended'}
+                                  </button>
+                                )}
                               </td>
                             </tr>
                           ))}
